@@ -8,7 +8,7 @@ from typing import List
 app = FastAPI()
 
 ocr = PaddleOCR(
-    lang='fr',
+    lang='fr',    
     use_textline_orientation=True,
     enable_mkldnn=False
 )
@@ -149,24 +149,28 @@ async def process_ocr(file: UploadFile = File(...)):
             texts.extend(data.get("rec_texts", []))            
             scores.extend(data.get("rec_scores", []))        
 
-        texts = extract_mrz(texts)        
+        mrz_lines = extract_mrz(texts)        
         # return {
         #     "texts": texts,  
         #     "scores": scores
         # }
         
-        if len(texts) == 0:
+        if len(mrz_lines) == 0:
             return {
-                "error": "No MRZ found."
+                "error": "No MRZ found.",
+                "texts": texts,
+                "scores": scores
             }
         
-        if texts[0].startswith("P"):            
-            return extract_passeport_data(texts)
-        elif texts[0].startswith("I"):            
-            return extract_cnib_data(texts)
+        if mrz_lines[0].startswith("P"):            
+            return extract_passeport_data(mrz_lines)
+        elif mrz_lines[0].startswith("I"):            
+            return extract_cnib_data(mrz_lines)
         else:
             return {
-                "error": "No card detected."
+                "error": "No card detected.",
+                "texts": texts,
+                "scores": scores
             }
 
     finally:        
