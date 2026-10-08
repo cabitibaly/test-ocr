@@ -10,7 +10,7 @@ app = FastAPI()
 ocr = PaddleOCR(
     lang='fr',    
     use_textline_orientation=True,
-    enable_mkldnn=False
+    enable_mkldnn=False,
 )
 
 _MRZ_FORMATS = {
@@ -74,12 +74,12 @@ def extract_passeport_data(texts: list):
     year_exp = date_expiration[:2]
     
     return {
-        "document_type": "Passport" if doc_type.startswith("P") else "Unknown",
+        "document_type": "PASSPORT" if doc_type.startswith("P") else "Unknown",
         "nationalite": nationalite,
-        "numero_passeport": numero_passport,
+        "numero_carte": numero_passport,
         "date_naissance": f"{jour}/{mois}/{annee}",
         "date_expiration": f"{day_exp}/{month_exp}/{year_exp}",
-        "sex": sex,
+        "sexe": sex,
         "nom": nom,
         "prenoms": prenoms
     }
@@ -123,14 +123,13 @@ def extract_cnib_data(texts: list):
     return {
         "document_type": "CNI" if doc_type.startswith("I") else "Unknown",
         "nationalite": nationalite,
-        "numero_cnib": numero_cnib,
+        "numero_carte": numero_cnib,
         "date_naissance": f"{jour}/{mois}/{annee}",
         "date_expiration": f"{day_exp}/{month_exp}/{year_exp}",
         "sexe": sexe,
         "nom": nom,
         "prenoms": prenoms
-    }                
-
+    }
 
 @app.post("/ocr")
 async def process_ocr(file: UploadFile = File(...)):    
@@ -138,7 +137,7 @@ async def process_ocr(file: UploadFile = File(...)):
         temp.write(await file.read())
         image_path = temp.name
         
-    try:        
+    try:             
         result = ocr.predict(image_path)
 
         texts = []
@@ -157,9 +156,12 @@ async def process_ocr(file: UploadFile = File(...)):
         
         if len(mrz_lines) == 0:
             return {
-                "error": "No MRZ found.",
-                "texts": texts,
-                "scores": scores
+                "instance": "/ocr",
+                "status": 404,                
+                "detail": "Aucun MRZ n'a été trouvé sur cette carte. Veuillez réessayer encore une fois.",
+                "title": "No MRZ found.",
+                # "texts": texts,
+                # "scores": scores
             }
         
         if mrz_lines[0].startswith("P"):            
